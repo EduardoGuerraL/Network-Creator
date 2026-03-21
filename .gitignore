@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+*.pickle
+*.dat
+.DS_Store
