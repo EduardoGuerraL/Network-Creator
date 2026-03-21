@@ -1,5 +1,0 @@
-pygame
-opencv-python
-numpy
-tkinter  
-# Usualmente viene con Python, pero es bueno mencionarlo
