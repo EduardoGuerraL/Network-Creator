@@ -80,12 +80,12 @@ def show_main_menu(screen):
 
         # --- 2. METADATOS (Toque Profesional) ---
         # Esquina Inferior Izquierda: Autoría y Departamento
-        author_txt = info_font.render("DEV: Eduardo Guerra", True, METADATA_COLOR)
+        author_txt = info_font.render("by Eduardo Guerra", True, METADATA_COLOR)
         screen.blit(author_txt, (20, screen.get_height() - 30))
         
         # Esquina Inferior Derecha: Versión y Fecha
-        ver_txt = info_font.render(f"BUILD: v1.0.4-ALPHA", True, METADATA_COLOR)
-        screen.blit(ver_txt, (screen.get_width() - ver_txt.get_width() - 20, screen.get_height() - 30))
+        #ver_txt = info_font.render(f"BUILD: v1.0.4-ALPHA", True, METADATA_COLOR)
+        #screen.blit(ver_txt, (screen.get_width() - ver_txt.get_width() - 20, screen.get_height() - 30))
 
         # --- 3. BOTONES (Centrados Verticalmente) ---
         total_menu_h = len(options) * 70
