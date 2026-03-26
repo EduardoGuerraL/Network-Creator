@@ -9,16 +9,32 @@ import os
 import math
 import random
 class NetworkApp:
-    def __init__(self, image_path):
+    def __init__(self, img_path = None):
         pygame.init()
-        
-        # Carga de imagen y configuración de ventana
-        self.img_raw = cv2.imread(image_path)
-        self.screen_size = (self.img_raw.shape[1], self.img_raw.shape[0])
+
+        if img_path:
+            # Opción 1: Imagen
+            self.bg_image = pygame.image.load(img_path).convert()
+            self.width, self.height = self.bg_image.get_size()
+        else:
+            # Opción 2: Lienzo Blanco (Resolución de trabajo ajustable)
+            self.width, self.height = 2000, 1500 # Un lienzo grande para trabajar
+            self.bg_image = pygame.Surface((self.width, self.height))
+            self.bg_image.fill((35, 38, 43)) 
+            # Dibujamos una rejilla tenue para que el usuario no se sienta "perdido" en el blanco
+            for x in range(0, self.width, 100):
+                pygame.draw.line(self.bg_image, (50, 53, 58), (x, 0), (x, self.height))
+            for y in range(0, self.height, 100):
+                pygame.draw.line(self.bg_image, (50, 53, 58), (0, y), (self.width, y))
+
+        # --- FIX: Definir screen_size correctamente ---
+        # La ventana física puede ser de un tamaño fijo (ej: 1200x800) 
+        # mientras que el lienzo/imagen interno es el que tiene zoom.
+        self.screen_size = (1200, 800) 
         self.screen = pygame.display.set_mode(self.screen_size)
         pygame.display.set_caption("Network Creator")
         
-        self.bg_image = pygame.image.load(image_path).convert_alpha()
+        # El rect debe representar el espacio de la imagen/lienzo
         self.image_rect = self.bg_image.get_rect()
         
         # Estado de la Red (Lógica separada)

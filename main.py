@@ -1,5 +1,5 @@
 from src.gui.app import NetworkApp, show_initial_splash
-from src.gui.menu import show_main_menu
+from src.gui.menu import show_main_menu, show_creation_menu
 from src.gui.widgets import get_image_path
 import pygame
 import sys
@@ -28,14 +28,23 @@ def main():
         choice = show_main_menu(screen)
         
         if choice == "CREAR RED NUEVA":
-            img_path = get_image_path()
-            if img_path:
-                # Ocultamos temporalmente la ventana de pygame mientras corre la App
-                app = NetworkApp(img_path)
-                app.run() 
-                # Cuando el usuario cierre la app, volverá al menú principal
-                #screen = pygame.display.set_mode(screen_size) 
+            resultado = show_creation_menu(screen)
             
+            if resultado == "SALIR":
+                break
+            elif resultado == "VOLVER":
+                continue
+            else:
+                # Si no es VOLVER ni SALIR, 'resultado' contiene "BLANK" o la ruta del archivo.
+                img_path = None if resultado == "BLANK" else resultado
+                
+                # Lanzamos la aplicación
+                app = NetworkApp(img_path)
+                app.run()
+                
+                # Al cerrar la red, restauramos la pantalla del menú
+                screen = pygame.display.set_mode((1200, 800))
+        
         elif choice == "CONTINUAR RED GUARDADA":
             # Aquí iría la lógica para cargar el archivo .pickle o .json
             print("Funcionalidad en construcción: Cargar red")
