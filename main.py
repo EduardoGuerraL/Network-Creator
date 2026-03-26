@@ -1,5 +1,7 @@
-from src.gui.app import NetworkApp, show_initial_splash
-from src.gui.menu import show_main_menu, show_creation_menu
+from src.gui.app import NetworkApp
+from src.gui.splash import show_initial_splash
+from src.gui.main_menu import show_main_menu
+from src.gui.creation_menu import show_creation_menu
 from src.gui.widgets import get_image_path
 import pygame
 import sys
