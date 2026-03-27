@@ -1,3 +1,4 @@
 pygame
 opencv-python
 numpy>=1.26.0
+networkx>=3.0
