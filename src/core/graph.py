@@ -5,6 +5,13 @@ class NetworkManager:
         self.weights = []
         self.action_history = []
 
+    def next_available_label(self):
+        used = {n["label"] for n in self.nodes}
+        i = 1
+        while str(i) in used:
+            i += 1
+        return str(i)
+
     def add_node(self, pos, label=""):
         node = {"pos": pos, "label": label}
         self.nodes.append(node)

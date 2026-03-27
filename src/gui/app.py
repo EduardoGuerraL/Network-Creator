@@ -121,9 +121,8 @@ class NetworkApp:
         if event.button == 1:
             rel_pos = self._screen_to_rel(mouse_pos)
             if self.mode == "NODE":
-                # Pedir etiqueta al crear — puede dejarse vacía
-                label = ask_node_label("")
-                if label is not None:           # None = canceló el diálogo
+                label = self.network.next_available_label()
+                if label is not None:
                     self.network.add_node(rel_pos, label=label)
             elif self.mode == "LINK":
                 node_idx = self._get_node_at(mouse_pos)
