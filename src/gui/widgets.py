@@ -1,55 +1,70 @@
-import tkinter as tk
-from tkinter import filedialog, simpledialog
+import subprocess
+import sys
 import os
+import textwrap
+from tkinter import filedialog, simpledialog
+
+def _run_dialog(script):
+    result = subprocess.run(
+        [sys.executable, '-c', textwrap.dedent(script)],
+        capture_output=True, text=True
+    )
+    path = result.stdout.strip()
+    return path if path else None
 
 def get_image_path():
-    root = tk.Tk()
-    root.withdraw()
-    root.update()
-    root.lift()
-    file_path = filedialog.askopenfilename(
-        parent=root,
-        title="Seleccionar imagen de fondo",
-        initialdir=os.getcwd(),
-        filetypes=[("Imágenes", "*.png *.jpg *.jpeg *.bmp"), ("Todos", "*.*")]
-    )
-    root.destroy()
-    return file_path if file_path else None
+    return _run_dialog(f"""
+        import tkinter as tk
+        from tkinter import filedialog
+        import os
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        path = filedialog.askopenfilename(
+            title='Seleccionar imagen de fondo',
+            initialdir=os.getcwd(),
+            filetypes=[('Imágenes', '*.png *.jpg *.jpeg *.bmp'), ('Todos', '*.*')]
+        )
+        print(path)
+    """)
 
 def get_save_path(default_name="proyecto"):
-    """Retorna ruta .json elegida por el usuario, o None."""
-    root = tk.Tk()
-    root.withdraw()
-    root.update()
-    path = filedialog.asksaveasfilename(
-        title="Guardar proyecto",
-        initialfile=default_name,
-        defaultextension=".json",
-        filetypes=[("Network JSON", "*.json")]
-    )
-    root.destroy()
-    return path if path else None
+    return _run_dialog(f"""
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        path = filedialog.asksaveasfilename(
+            title='Guardar proyecto',
+            initialfile='{default_name}',
+            defaultextension='.json',
+            filetypes=[('Network JSON', '*.json')]
+        )
+        print(path)
+    """)
 
 def get_open_path():
-    """Retorna ruta .json elegida para abrir, o None."""
-    root = tk.Tk()
-    root.withdraw()
-    root.update()
-    path = filedialog.askopenfilename(
-        title="Abrir proyecto",
-        filetypes=[("Network JSON", "*.json"), ("Pickle legacy", "*.pickle")]
-    )
-    root.destroy()
-    return path if path else None
+    return _run_dialog("""
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        path = filedialog.askopenfilename(
+            title='Abrir proyecto',
+            filetypes=[('Network JSON', '*.json'), ('Pickle legacy', '*.pickle')]
+        )
+        print(path)
+    """)
 
 def ask_node_label(current_label=""):
-    """Diálogo inline para etiquetar un nodo. Retorna string o None si cancela."""
-    root = tk.Tk()
-    root.withdraw()
-    label = simpledialog.askstring(
-        "Etiqueta del nodo",
-        "Nombre:",
-        initialvalue=current_label
-    )
-    root.destroy()
-    return label  # None si el usuario canceló
+    return _run_dialog(f"""
+        import tkinter as tk
+        from tkinter import simpledialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        label = simpledialog.askstring('Etiqueta del nodo', 'Nombre:', initialvalue='{current_label}')
+        print(label or '')
+    """)

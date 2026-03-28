@@ -1,7 +1,7 @@
 from src.core.export import save_project, load_project, migrate_pickle
 from src.gui.widgets import get_save_path, get_open_path, ask_node_label
 from pygame.locals import (QUIT, MOUSEBUTTONDOWN, MOUSEMOTION, MOUSEBUTTONUP,
-                            KEYDOWN, K_n, K_l, K_z, K_s, K_o, K_d, K_e,
+                            KEYDOWN, K_n, K_l, K_z, K_s, K_o, K_r, K_e,
                             K_1, K_2, K_3, KMOD_CTRL)
 import pygame
 from src.core.graph import NetworkManager
@@ -9,10 +9,9 @@ from src.utils.geometry import draw_arrow
 
 class NetworkApp:
     def __init__(self, img_path = None):
-        self.mode = "MOVE"  # MOVE, NODE, LINK, DELETE
-        self.hovered_node = None  # para resaltar en modo DELETE
         pygame.init()
-
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("Arial", 18)
         if img_path:
             # Opción 1: Imagen
             self.bg_image = pygame.image.load(img_path).convert()
@@ -27,7 +26,7 @@ class NetworkApp:
                 pygame.draw.line(self.bg_image, (50, 53, 58), (x, 0), (x, self.height))
             for y in range(0, self.height, 100):
                 pygame.draw.line(self.bg_image, (50, 53, 58), (0, y), (self.width, y))
-
+        self.hovered_node = None  # para resaltar en modo DELETE
         # --- FIX: Definir screen_size correctamente ---
         # La ventana física puede ser de un tamaño fijo (ej: 1200x800) 
         # mientras que el lienzo/imagen interno es el que tiene zoom.
@@ -45,12 +44,11 @@ class NetworkApp:
         self.zoom = 1.0
         self.offset = [0, 0]
         self.dragging = False
-        self.mode = "MOVE" # MOVE, NODE, LINK
+        self.mode = "CREATE" # CREATE, DELETE
         self.selected_node = None
         self.current_weight = 1
         
-        self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("Arial", 18)
+
 
     def run(self):
         running = True
@@ -69,10 +67,13 @@ class NetworkApp:
                 self._handle_keydown(event)
                 
             elif event.type == MOUSEBUTTONDOWN:
+                print(event)  # Debug: Ver qué botón se presionó
                 self._handle_mousedown(event)
                 
             elif event.type == MOUSEBUTTONUP:
                 if event.button == 1: self.dragging = False
+                if event.button == 2: self.dragging = False
+
                 
             elif event.type == MOUSEMOTION:
                 self._handle_mousemotion(event)
@@ -80,11 +81,9 @@ class NetworkApp:
 
     def _handle_keydown(self, event):
         if event.key == K_n:
-            self.mode = "NODE" if self.mode != "NODE" else "MOVE"
-        elif event.key == K_l:
-            self.mode = "LINK" if self.mode != "LINK" else "MOVE"
-        elif event.key == K_d:          # nuevo: modo borrar
-            self.mode = "DELETE" if self.mode != "DELETE" else "MOVE"
+            self.mode = "CREATE" if self.mode != "CREATE" else "CREATE" # Toggle para no perder el modo al soltar la tecla
+        elif event.key == K_r:          # nuevo: modo borrar
+            self.mode = "DELETE" if self.mode != "DELETE" else "CREATE"
         elif event.key == K_e:          # nuevo: editar etiqueta del nodo bajo cursor
             node_idx = self._get_node_at(pygame.mouse.get_pos())
             if node_idx is not None:
@@ -118,35 +117,41 @@ class NetworkApp:
             self._handle_zoom(event.button, mouse_pos)
             return
 
-        if event.button == 1:
+        elif event.button == 1:
             rel_pos = self._screen_to_rel(mouse_pos)
-            if self.mode == "NODE":
-                label = self.network.next_available_label()
+            
+            label = self.network.next_available_label()
+            if self.mode == "CREATE":
                 if label is not None:
                     self.network.add_node(rel_pos, label=label)
-            elif self.mode == "LINK":
-                node_idx = self._get_node_at(mouse_pos)
-                if node_idx is not None:
-                    if self.selected_node is None:
-                        self.selected_node = node_idx
-                    else:
-                        self.network.add_link(self.selected_node, node_idx, self.current_weight)
-                        self.selected_node = None
             elif self.mode == "DELETE":
                 node_idx = self._get_node_at(mouse_pos)
                 if node_idx is not None:
                     self.network.remove_node(node_idx)
                     self.selected_node = None   # reset por si estaba seleccionado
-            else:  # MOVE
-                self.dragging = True
-                self.mouse_start_x, self.mouse_start_y = mouse_pos
-                self.offset_start_x, self.offset_start_y = self.image_rect.topleft
+        
+        elif event.button == 3:
+            rel_pos = self._screen_to_rel(mouse_pos)
+            node_idx = self._get_node_at(mouse_pos)
+            if node_idx is not None:
+                if self.selected_node is None:
+                    self.selected_node = node_idx
+                else:
+                    self.network.add_link(self.selected_node, node_idx, self.current_weight)
+                    self.selected_node = None
+            
+        
+        elif event.button == 2:  # MOVE
+            self.dragging = True
+            self.mouse_start_x, self.mouse_start_y = mouse_pos
+            self.offset_start_x, self.offset_start_y = self.image_rect.topleft
 
         elif event.button == 3:         # clic derecho = borrar enlace
             node_idx = self._get_node_at(mouse_pos)
             if node_idx is not None and self.selected_node is not None:
                 self.network.remove_link(self.selected_node, node_idx)
                 self.selected_node = None
+    
     def _screen_to_rel(self, pos):
         rel_x = (pos[0] - self.image_rect.x) / (self.zoom * self.image_rect.width)
         rel_y = (pos[1] - self.image_rect.y) / (self.zoom * self.image_rect.height)
@@ -200,10 +205,9 @@ class NetworkApp:
                 self.screen.blit(label_surf, (screen_pos[0] + 9, screen_pos[1] - 9))
 
         # HUD
-        mode_colors = {"MOVE": (180,180,180), "NODE": (80,220,80),
-                    "LINK": (80,160,255), "DELETE": (255,80,80)}
+        mode_colors = {"CREATE": (180,180,180), "DELETE": (80,220,80)}
         color = mode_colors.get(self.mode, (255,255,255))
-        info = f"MODO: {self.mode}  |  PESO: {self.current_weight}  |  NODOS: {len(self.network.nodes)}  |  [N] nodo  [L] link  [D] borrar  [E] etiquetar  [Ctrl+S] guardar  [Ctrl+O] abrir"
+        info = f"MODO: {self.mode}  |  NODOS: {len(self.network.nodes)}  |  LINKS: {len(self.network.links)}  | PESO: {self.current_weight}  | [R] borrar  [E] etiquetar  [Ctrl+S] guardar  [Ctrl+O] abrir"
         text = self.font.render(info, True, color)
         self.screen.blit(text, (10, self.screen_size[1] - 28))
 
@@ -234,8 +238,8 @@ class NetworkApp:
         self._constrain_boundaries()
 
     def _handle_mousemotion(self, event):
-        # Solo movemos la cámara si estamos en modo MOVE y arrastrando
-        if self.dragging and self.mode == "MOVE":
+        # Solo movemos la cámara si estamos arrastrando
+        if self.dragging:
             self.image_rect.x = self.offset_start_x + (event.pos[0] - self.mouse_start_x)
             self.image_rect.y = self.offset_start_y + (event.pos[1] - self.mouse_start_y)
             self._constrain_boundaries()
