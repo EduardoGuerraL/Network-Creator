@@ -1,7 +1,7 @@
 from src.core.export import save_project, load_project, migrate_pickle
-from src.gui.widgets import get_save_path, get_open_path, ask_node_label
+from src.gui.widgets import get_save_path, get_open_path, ask_node_label, get_image_path
 from pygame.locals import (QUIT, MOUSEBUTTONDOWN, MOUSEMOTION, MOUSEBUTTONUP,
-                            KEYDOWN, K_n, K_l, K_z, K_s, K_o, K_r, K_e,
+                            KEYDOWN, K_n, K_r, K_z, K_s, K_o, K_d, K_e, K_b,
                             K_1, K_2, K_3, KMOD_CTRL)
 import pygame
 from src.core.graph import NetworkManager
@@ -83,7 +83,7 @@ class NetworkApp:
         if event.key == K_n:
             self.mode = "CREATE" if self.mode != "CREATE" else "CREATE" # Toggle para no perder el modo al soltar la tecla
         elif event.key == K_r:          # nuevo: modo borrar
-            self.mode = "DELETE" if self.mode != "DELETE" else "CREATE"
+            self.mode = "REMOVE" if self.mode != "DELETE" else "CREATE"
         elif event.key == K_e:          # nuevo: editar etiqueta del nodo bajo cursor
             node_idx = self._get_node_at(pygame.mouse.get_pos())
             if node_idx is not None:
@@ -107,6 +107,11 @@ class NetworkApp:
                     else:
                         self.network = load_project(path)
 
+            elif event.key == K_b:          # nuevo: cambiar imagen de fondo
+                path = get_image_path()
+                if path:
+                    self._load_background(path)
+        
         if event.key in [K_1, K_2, K_3]:
             self.current_weight = int(event.unicode)
 
@@ -260,3 +265,8 @@ class NetworkApp:
             self.image_rect.x = int(min_x)
         if self.image_rect.y < min_y:
             self.image_rect.y = int(min_y)
+
+    def _load_background(self, img_path):
+        self.bg_image = pygame.image.load(img_path).convert()
+        self.width, self.height = self.bg_image.get_size()
+        self.image_rect = self.bg_image.get_rect()
