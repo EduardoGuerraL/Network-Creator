@@ -12,6 +12,8 @@ class NetworkApp:
         pygame.init()
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Arial", 18)
+        self._cached_zoom = None
+        self._cached_scaled_img = None
         if img_path:
             # Opción 1: Imagen
             self.bg_image = pygame.image.load(img_path).convert()
@@ -182,10 +184,13 @@ class NetworkApp:
     def draw(self):
         self.screen.fill((30, 30, 30))
 
-        scaled_w = int(self.image_rect.width * self.zoom)
-        scaled_h = int(self.image_rect.height * self.zoom)
-        scaled_img = pygame.transform.smoothscale(self.bg_image, (scaled_w, scaled_h))
-        self.screen.blit(scaled_img, self.image_rect.topleft)
+        if self.zoom != self._cached_zoom:
+            scaled_w = int(self.image_rect.width * self.zoom)
+            scaled_h = int(self.image_rect.height * self.zoom)
+            self._cached_scaled_img = pygame.transform.smoothscale(self.bg_image, (scaled_w, scaled_h))
+            self._cached_zoom = self.zoom
+
+        self.screen.blit(self._cached_scaled_img, self.image_rect.topleft)
 
         # Enlaces
         for i, (start_idx, end_idx) in enumerate(self.network.links):
@@ -270,3 +275,5 @@ class NetworkApp:
         self.bg_image = pygame.image.load(img_path).convert()
         self.width, self.height = self.bg_image.get_size()
         self.image_rect = self.bg_image.get_rect()
+        self._cached_zoom = None  # forzar recálculo
+        self._cached_scaled_img = None
