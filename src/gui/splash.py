@@ -46,7 +46,7 @@ def show_initial_splash(screen):
     subtitle_rect = subtitle_surf.get_rect(center=(screen.get_width()//2, screen.get_height()//2 + 45))
     
     # Creamos nodos flotantes en posiciones aleatorias
-    N = 50
+    N = 80
     nodes = [[random.randint(0, screen.get_width()), random.randint(0, screen.get_height()), 
               random.choice([-1, 1])*random.uniform(0.2, 0.5), 
               random.choice([-1, 1])*random.uniform(0.2, 0.5)] for _ in range(N)]
@@ -54,7 +54,7 @@ def show_initial_splash(screen):
     clock = pygame.time.Clock()
     
     # Animación de Fade In y Fade Out
-    for alpha in range(0, 255, 2): # Aparece
+    for alpha in range(0, 255, 3): # Aparece
         for event in pygame.event.get(): pass # Evita que la ventana se congele
         
         # Usamos una superficie temporal para manejar la transparencia global
@@ -72,7 +72,7 @@ def show_initial_splash(screen):
         clock.tick(60)
 
     # --- Pausa Dramática de Lectura ---
-    for _ in range(100): # 1.5 segundos de animación a 60fps
+    for _ in range(100):
         for event in pygame.event.get(): pass
         temp_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
         draw_network(temp_surface, 255)
