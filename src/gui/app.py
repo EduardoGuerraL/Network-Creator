@@ -14,20 +14,19 @@ class NetworkApp:
         self.font = pygame.font.SysFont("Arial", 18)
         self._cached_zoom = None
         self._cached_scaled_img = None
-        if img_path:
-            # Opción 1: Imagen
-            self.bg_image = pygame.image.load(img_path).convert()
-            self.width, self.height = self.bg_image.get_size()
-        else:
-            # Opción 2: Lienzo Blanco (Resolución de trabajo ajustable)
-            self.width, self.height = 2000, 1500 # Un lienzo grande para trabajar
-            self.bg_image = pygame.Surface((self.width, self.height))
-            self.bg_image.fill((35, 38, 43)) 
-            # Dibujamos una rejilla tenue para que el usuario no se sienta "perdido" en el blanco
-            for x in range(0, self.width, 100):
-                pygame.draw.line(self.bg_image, (50, 53, 58), (x, 0), (x, self.height))
-            for y in range(0, self.height, 100):
-                pygame.draw.line(self.bg_image, (50, 53, 58), (0, y), (self.width, y))
+        
+        # Cargar imagen de fondo o crear lienzo
+        self.has_image = img_path is not None
+
+        self.has_image = False
+        self.min_zoom = None
+        self.max_zoom = None
+        self.zoom = 1.0
+        self.width, self.height = 4000, 3000
+        self.bg_image = pygame.Surface((self.width, self.height))
+        self.bg_image.fill((35, 38, 43))
+        
+        
         self.hovered_node = None  # para resaltar en modo DELETE
         # --- FIX: Definir screen_size correctamente ---
         # La ventana física puede ser de un tamaño fijo (ej: 1200x800) 
@@ -184,13 +183,30 @@ class NetworkApp:
     def draw(self):
         self.screen.fill((30, 30, 30))
 
-        if self.zoom != self._cached_zoom:
-            scaled_w = int(self.image_rect.width * self.zoom)
-            scaled_h = int(self.image_rect.height * self.zoom)
-            self._cached_scaled_img = pygame.transform.smoothscale(self.bg_image, (scaled_w, scaled_h))
-            self._cached_zoom = self.zoom
+        if self.has_image:
+            # ── Viewport: escalar solo la región visible ──
+            screen_w, screen_h = self.screen_size
+            src_x = max(0, int(-self.image_rect.x / self.zoom))
+            src_y = max(0, int(-self.image_rect.y / self.zoom))
+            src_w = min(self.width - src_x, int(screen_w / self.zoom) + 2)
+            src_h = min(self.height - src_y, int(screen_h / self.zoom) + 2)
+            dst_x = max(0, self.image_rect.x)
+            dst_y = max(0, self.image_rect.y)
+            dst_w = min(screen_w - dst_x, int(src_w * self.zoom))
+            dst_h = min(screen_h - dst_y, int(src_h * self.zoom))
 
-        self.screen.blit(self._cached_scaled_img, self.image_rect.topleft)
+            if src_w > 0 and src_h > 0 and dst_w > 0 and dst_h > 0:
+                try:
+                    visible = self.bg_image.subsurface(
+                        pygame.Rect(src_x, src_y, src_w, src_h))
+                    scaled_img = pygame.transform.scale(visible, (dst_w, dst_h))
+                    self.screen.blit(scaled_img, (dst_x, dst_y))
+                except ValueError:
+                    pass
+        else:
+            # ── Lienzo infinito: fondo liso + cuadrícula dinámica ──
+            self.screen.fill((35, 38, 43))
+            self._draw_grid()
 
         # Enlaces
         for i, (start_idx, end_idx) in enumerate(self.network.links):
@@ -225,26 +241,22 @@ class NetworkApp:
 
 
     def _handle_zoom(self, button, mouse_pos):
-        # Guardamos la posición relativa del mouse antes del zoom para mantener el foco
         rel_x = (mouse_pos[0] - self.image_rect.x) / (self.zoom * self.image_rect.width)
         rel_y = (mouse_pos[1] - self.image_rect.y) / (self.zoom * self.image_rect.height)
 
-        # Factor de escala
-        if button == 4: # Scroll Up (Zoom In)
-            new_zoom = self.zoom * 1.1
-            if new_zoom <= 10.0: # Límite máximo de zoom
-                self.zoom = new_zoom
-        elif button == 5: # Scroll Down (Zoom Out)
-            new_zoom = self.zoom / 1.1
-            if new_zoom >= 1.0: # No alejarse más del tamaño original
-                self.zoom = new_zoom
-            else:
-                self.zoom = 1.0
+        factor = 1.05 if button == 4 else 1 / 1.05
+        new_zoom = self.zoom * factor
 
-        # Ajustamos el rect de la imagen para que el punto bajo el mouse no se mueva
-        self.image_rect.x = mouse_pos[0] - rel_x * self.zoom * self.image_rect.width
-        self.image_rect.y = mouse_pos[1] - rel_y * self.zoom * self.image_rect.height
-        
+        # Aplicar límites solo si existen
+        if self.min_zoom is not None:
+            new_zoom = max(new_zoom, self.min_zoom)
+        if self.max_zoom is not None:
+            new_zoom = min(new_zoom, self.max_zoom)
+
+        self.zoom = new_zoom
+
+        self.image_rect.x = int(mouse_pos[0] - rel_x * self.zoom * self.image_rect.width)
+        self.image_rect.y = int(mouse_pos[1] - rel_y * self.zoom * self.image_rect.height)
         self._constrain_boundaries()
 
     def _handle_mousemotion(self, event):
@@ -275,5 +287,56 @@ class NetworkApp:
         self.bg_image = pygame.image.load(img_path).convert()
         self.width, self.height = self.bg_image.get_size()
         self.image_rect = self.bg_image.get_rect()
-        self._cached_zoom = None  # forzar recálculo
-        self._cached_scaled_img = None
+        
+        # Activar modo imagen y recalcular límites de zoom
+        self.has_image = True
+        self.min_zoom = max(self.screen_size[0] / self.width,
+                            self.screen_size[1] / self.height)
+        self.max_zoom = 15.0
+        
+        # Encuadrar la imagen en pantalla al cargarla
+        self.zoom = self.min_zoom
+        self.image_rect.x = 0
+        self.image_rect.y = 0
+        self._constrain_boundaries()
+        
+
+    def _draw_grid(self):
+        """Cuadrícula dinámica que se adapta al zoom para el lienzo infinito."""
+        import math
+
+        # Spacing objetivo en pantalla: ~100px entre líneas
+        TARGET_PX = 100
+        logical_spacing = TARGET_PX / self.zoom
+
+        # Redondear al valor "agradable" más cercano (1, 2, 5, 10, 20, 50, 100...)
+        magnitude = 10 ** math.floor(math.log10(logical_spacing))
+        normalized = logical_spacing / magnitude
+        if normalized < 2:
+            spacing = magnitude
+        elif normalized < 5:
+            spacing = 2 * magnitude
+        else:
+            spacing = 5 * magnitude
+
+        screen_spacing = spacing * self.zoom  # píxeles en pantalla entre líneas
+
+        # Origen del canvas en pantalla
+        ox = self.image_rect.x
+        oy = self.image_rect.y
+
+        sw, sh = self.screen_size
+
+        # Primera línea vertical visible a la izquierda de la pantalla
+        first_col = math.floor(-ox / screen_spacing)
+        x = ox + first_col * screen_spacing
+        while x <= sw:
+            pygame.draw.line(self.screen, (50, 53, 58), (int(x), 0), (int(x), sh))
+            x += screen_spacing
+
+        # Primera línea horizontal visible arriba de la pantalla
+        first_row = math.floor(-oy / screen_spacing)
+        y = oy + first_row * screen_spacing
+        while y <= sh:
+            pygame.draw.line(self.screen, (50, 53, 58), (0, int(y)), (sw, int(y)))
+            y += screen_spacing
