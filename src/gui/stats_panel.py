@@ -7,7 +7,7 @@ Layout (two vertical halves)
 ─────────────────────────────
   TOP — analytics
     • Header bar
-    • Compact metric selector (4 horizontal buttons)
+    • Compact metric selector (3 horizontal buttons)
     • Real-time KDE density plot  (background thread)
 
   BOTTOM — controls
@@ -60,7 +60,7 @@ METRICS: List[Tuple[str, str, callable]] = [
     ("degree",      "Degree",   nx.degree_centrality),
     ("betweenness", "Between",  nx.betweenness_centrality),
     ("closeness",   "Closeness",nx.closeness_centrality),
-    ("eigenvector", "Eigenvec", _safe_eigenvector),
+    #("eigenvector", "Eigenvec", _safe_eigenvector),
 ]
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -265,7 +265,7 @@ class StatsPanel:
 
     def _metric_btn_rect(self, idx: int) -> pygame.Rect:
         avail = PANEL_W - _BTN_PAD * 2
-        bw    = (avail - 3 * 4) // 4
+        bw    = (avail - 3 * 3) // 3
         return pygame.Rect(_BTN_PAD + idx * (bw + 4), _Y_METRICS, bw, _H_METRICS)
 
     def _model_btn_rect(self, idx: int) -> pygame.Rect:
@@ -292,7 +292,7 @@ class StatsPanel:
     def _draw_header(self, s: pygame.Surface) -> None:
         pygame.draw.rect(s, _DARKER, (0, 0, PANEL_W, _H_HEADER))
         pygame.draw.line(s, _BORDER, (0, _H_HEADER - 1), (PANEL_W, _H_HEADER - 1))
-        t = self._font_hdr.render("ANÁLISIS DE RED", True, _ACCENT)
+        t = self._font_hdr.render("Network analysis", True, _ACCENT)
         s.blit(t, (PANEL_W // 2 - t.get_width() // 2,
                    _H_HEADER // 2 - t.get_height() // 2))
 
