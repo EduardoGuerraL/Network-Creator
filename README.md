@@ -179,6 +179,6 @@ Las contribuciones son bienvenidas. Si encuentras un bug o tienes una idea, abre
 
 by **Eduardo Guerra**
 
-_"Medite cada paso antemano, pero cuando crea poder justificarlo, no se detenga ante nada." - Max Plank_
+_"Medite cada paso con antemano, pero cuando crea poder justificarlo, no se detenga ante nada." - Max Plank_
 
 </div>
